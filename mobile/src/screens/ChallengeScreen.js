@@ -4,13 +4,11 @@ import colors from '../theme/colors';
 import { addXP } from '../database/schema';
 
 export default function ChallengeScreen({ route, navigation }) {
-  // It receives the waypoint data that was tapped on the MapScreen
-  const { waypoint, isLocalInference } = route.params;
+  const { waypoint, isLocalInference, onVictory } = route.params;
 
   const [answer, setAnswer] = useState('');
   const [evaluating, setEvaluating] = useState(false);
 
-  // We theme the UI based on whether it's an Island (Learn) or Blockade (Test)
   const isBlockade = waypoint.type.includes('blockade');
   const nodeIcon = isBlockade ? '⚔️' : '📜';
   const nodeColor = isBlockade ? colors.error : colors.primary;
@@ -19,16 +17,19 @@ export default function ChallengeScreen({ route, navigation }) {
     if (answer.trim() === '') return;
     setEvaluating(true);
 
-    // Mocking the AI Grading API (Usually we hit the Python Edge Server here)
     setTimeout(async () => {
        setEvaluating(false);
        
-       // Success! Reward them!
        const xpReward = isBlockade ? 50 : 15;
        await addXP(xpReward);
        
        Alert.alert("Success!", `You proved your knowledge and earned ${xpReward} XP!`, [
-         { text: "Return to Ship", onPress: () => navigation.goBack() }
+         { text: "Return to Ship", onPress: () => {
+             // 1. Tell the MapScreen that we beat this node
+             if (onVictory) onVictory(); 
+             // 2. Head back to the river
+             navigation.goBack(); 
+         }}
        ]);
 
     }, 2000);
